@@ -36,7 +36,6 @@ Y_scaled_testing = Y_scaler.transform(Y_testing)
 # Define model parameters
 learning_rate = 0.001
 training_epochs = 100
-display_step = 5
 
 # Define how many inputs and outputs are in our neural network
 number_of_inputs = 9
@@ -77,7 +76,7 @@ with tf.variable_scope('output'):
     biases = tf.get_variable(name="biases4", shape=[number_of_outputs], initializer=tf.zeros_initializer())
     prediction = tf.matmul(layer_3_output, weights) + biases
 
-# Section Two: Define the cost function of the neural network that will be optimized during training
+# Section Two: Define the cost function of the neural network that will measure prediction accuracy during training
 
 with tf.variable_scope('cost'):
     Y = tf.placeholder(tf.float32, shape=(None, 1))
@@ -111,8 +110,8 @@ with tf.Session() as session:
         # Feed in the training data and do one step of neural network training
         session.run(optimizer, feed_dict={X: X_scaled_training, Y: Y_scaled_training})
 
-        # Every few training steps, log our progress
-        if epoch % display_step == 0:
+        # Every 5 training steps, log our progress
+        if epoch % 5 == 0:
             # Get the current accuracy scores by running the "cost" operation on the training and test data sets
             training_cost, training_summary = session.run([cost, summary], feed_dict={X: X_scaled_training, Y:Y_scaled_training})
             testing_cost, testing_summary = session.run([cost, summary], feed_dict={X: X_scaled_testing, Y:Y_scaled_testing})
@@ -145,28 +144,3 @@ with tf.Session() as session:
 
     print("The actual earnings of Game #1 were ${}".format(real_earnings))
     print("Our neural network predicted earnings of ${}".format(predicted_earnings))
-
-    model_builder = tf.saved_model.builder.SavedModelBuilder('exported_model')
-
-    inputs = {
-        'input': tf.saved_model.utils.build_tensor_info(X)
-        }
-    outputs = {
-        'earnings': tf.saved_model.utils.build_tensor_info(prediction)
-        }
-
-    signature_def = tf.saved_model.signature_def_utils.build_signature_def(
-        inputs=inputs,
-        outputs=outputs,
-        method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME
-    )
-
-    model_builder.add_meta_graph_and_variables(
-        session,
-        tags=[tf.saved_model.tag_constants.SERVING],
-        signature_def_map={
-            tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY: signature_def
-        }
-    )
-
-    model_builder.save()
